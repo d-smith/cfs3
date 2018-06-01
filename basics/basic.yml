@@ -1,0 +1,7 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  CFOriginIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'Bucket 1 id'
