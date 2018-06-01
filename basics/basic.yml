@@ -33,3 +33,24 @@ Resources:
           Action: s3:GetObject
           Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
 
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - ContentBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'BucketName', 's3.amazonaws.com']]
+          Id: contentBucketOrigin
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Good old bucket 1
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: contentBucketOrigin
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
