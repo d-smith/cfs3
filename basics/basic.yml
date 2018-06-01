@@ -1,7 +1,35 @@
 AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution to distribute bucket contents, with no
+  direct access to the bucket allowed.
+
+Parameters:
+  BucketName:
+    Type: String
+
 Resources:
   CFOriginIdentity:
-    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
       CloudFrontOriginAccessIdentityConfig:
         Comment: 'Bucket 1 id'
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: BucketOwnerFullControl
+
+  ContentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
+
