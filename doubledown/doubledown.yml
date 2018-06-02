@@ -8,6 +8,12 @@ Parameters:
     Type: String
   BucketNameTwo:
     Type: String
+  ActiveOrigin:
+    Type: String
+    Default: one
+    AllowedValues:
+      - one
+      - two
 
 Resources:
   CFOriginIdentity:
@@ -65,11 +71,11 @@ Resources:
       DistributionConfig:
         Origins:
         - DomainName: !Join [., [!Ref 'BucketNameOne', 's3.amazonaws.com']]
-          Id: contentBucketOriginOne
+          Id: one
           S3OriginConfig:
             OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
         - DomainName: !Join [., [!Ref 'BucketNameTwo', 's3.amazonaws.com']]
-          Id: contentBucketOriginTwo
+          Id: two
           S3OriginConfig:
             OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
         Enabled: 'true'
@@ -82,6 +88,6 @@ Resources:
             QueryString: 'false'
             Cookies:
               Forward: none
-          TargetOriginId: contentBucketOriginOne
+          TargetOriginId: !Ref 'ActiveOrigin'
           ViewerProtocolPolicy: redirect-to-https
         PriceClass: PriceClass_100
