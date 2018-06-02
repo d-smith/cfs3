@@ -1,0 +1,93 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution to distribute bucket contents, with no
+  direct access to the bucket allowed.
+
+Parameters:
+  BucketNameOne:
+    Type: String
+  BucketNameTwo:
+    Type: String
+  ActiveOrigin:
+    Type: String
+    Default: one
+    AllowedValues:
+      - one
+      - two
+
+Resources:
+  CFOriginIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'CF Id for Double DOwn'
+
+  ContentBucketOne:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketNameOne
+      AccessControl: BucketOwnerFullControl
+
+  ContentBucketTwo:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketNameTwo
+      AccessControl: BucketOwnerFullControl
+
+
+  ContentBucketPolicyOne:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucketOne
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucketOne', /*]]
+
+  ContentBucketPolicyTwo:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucketTwo
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucketTwo', /*]]
+
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - ContentBucketOne
+    - ContentBucketTwo
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'BucketNameOne', 's3.amazonaws.com']]
+          Id: one
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        - DomainName: !Join [., [!Ref 'BucketNameTwo', 's3.amazonaws.com']]
+          Id: two
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Two buckets are better than one
+        DefaultCacheBehavior:
+          DefaultTTL: 300
+          MinTTL: 0
+          MaxTTL: 600
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: !Ref 'ActiveOrigin'
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
