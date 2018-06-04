@@ -1,0 +1,53 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Edge function for exploring viewer request events
+Parameters:
+  CodeBucketName:
+    Type: String
+    Description: Bucket containing lambda code zip file
+
+Resources:
+  EdgeProtoVersion:
+    Type: "AWS::Lambda::Version"
+    DependsOn: EdgeProto
+    Properties:
+      FunctionName: !Ref EdgeProto
+      Description: "Edge deployable proto function"
+
+  EdgeProto:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: "edgefn.handler"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code: 
+        S3Bucket: !Ref CodeBucketName
+        S3Key: edgefn.zip
+      Runtime: "nodejs8.10"
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+            - edgelambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: logs
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+Outputs:
+    LambdaArn:
+        Value: !GetAtt EdgeProto.Arn
+
