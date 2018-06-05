@@ -4,9 +4,15 @@ Description: >
   default. Include a view request lambda function that can route to either bucket based on
   configuration.
 
-
+#Parameters:
+#  CodeBucketName:
+#    Type: String
+#    Description: Bucket containing lambda code zip file
 
 Resources:
+
+
+
   CFOriginIdentity:
     Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
     Properties:
@@ -76,6 +82,7 @@ Resources:
     - BlueBucket
     - GreenBucket
     - DefaultBucket
+#    - EdgeProtoVersion
     Properties:
       DistributionConfig:
         Origins:
@@ -93,21 +100,25 @@ Resources:
             OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
         Enabled: 'true'
         Comment: Blue green bucket routing
-        CacheBehaviors:
-          - ForwardedValues:
-              QueryString: 'false'
-              Cookies:
-                Forward: none
-            PathPattern: blue/*
-            TargetOriginId: blue
-            ViewerProtocolPolicy: redirect-to-https
-          - ForwardedValues:
-              QueryString: 'false'
-              Cookies:
-                Forward: none
-            PathPattern: green/*
-            TargetOriginId: green
-            ViewerProtocolPolicy: redirect-to-https
+#        CacheBehaviors:
+#          - ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            DefaultTTL: 300
+#            MinTTL: 0
+#            MaxTTL: 600
+#            TargetOriginId: blue
+#            ViewerProtocolPolicy: redirect-to-https
+#          - ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            DefaultTTL: 300
+#            MinTTL: 0
+#            MaxTTL: 600
+#            TargetOriginId: green
+#            ViewerProtocolPolicy: redirect-to-https
         DefaultCacheBehavior:
           DefaultTTL: 300
           MinTTL: 0
@@ -118,6 +129,9 @@ Resources:
               Forward: none
           TargetOriginId: default
           ViewerProtocolPolicy: redirect-to-https
+#          LambdaFunctionAssociations:
+#            - EventType: 'viewer-request'
+#              LambdaFunctionARN: !Ref 'EdgeProtoVersion'
         PriceClass: PriceClass_100
 
 Outputs:
