@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution with blue and green buckets, and a null bucket for
+  default. Include a view request lambda function that can route to either bucket based on
+  configuration.
+
+#Parameters:
+#  CodeBucketName:
+#    Type: String
+#    Description: Bucket containing lambda code zip file
+
+Resources:
+
+
+
+  CFOriginIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'CF Id for BlueGreen'
+
+  BlueBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+  GreenBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+  DefaultBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+
+  ContentBucketPolicyBlue:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BlueBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'BlueBucket', /*]]
+
+  ContentBucketPolicyGreen:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GreenBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'GreenBucket', /*]]
+
+  ContentBucketPolicyDefault:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DefaultBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'DefaultBucket', /*]]
+
+
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - BlueBucket
+    - GreenBucket
+    - DefaultBucket
+#    - EdgeProtoVersion
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'BlueBucket', 's3.amazonaws.com']]
+          Id: blue
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        - DomainName: !Join [., [!Ref 'GreenBucket', 's3.amazonaws.com']]
+          Id: green
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        - DomainName: !Join [., [!Ref 'DefaultBucket', 's3.amazonaws.com']]
+          Id: default
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Blue green bucket routing
+#        CacheBehaviors:
+#          - ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            DefaultTTL: 300
+#            MinTTL: 0
+#            MaxTTL: 600
+#            TargetOriginId: blue
+#            ViewerProtocolPolicy: redirect-to-https
+#          - ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            DefaultTTL: 300
+#            MinTTL: 0
+#            MaxTTL: 600
+#            TargetOriginId: green
+#            ViewerProtocolPolicy: redirect-to-https
+        DefaultCacheBehavior:
+          DefaultTTL: 300
+          MinTTL: 0
+          MaxTTL: 600
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: default
+          ViewerProtocolPolicy: redirect-to-https
+#          LambdaFunctionAssociations:
+#            - EventType: 'viewer-request'
+#              LambdaFunctionARN: !Ref 'EdgeProtoVersion'
+        PriceClass: PriceClass_100
+
+Outputs:
+  GreenBucket: 
+    Value: !Ref GreenBucket
+  BlueBucket: 
+    Value: !Ref BlueBucket
+  DefaultBucket: 
+    Value: !Ref DefaultBucket
