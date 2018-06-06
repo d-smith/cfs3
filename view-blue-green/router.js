@@ -16,7 +16,7 @@ exports.green = (event, context, callback) => {
     console.log(`context: ${JSON.stringify(context)}`);
     let request = event.Records[0].cf.request;
 
-    //Always blue
+    //Always green
     request.uri = '/green' + request.uri;
     
     callback(null, request);
