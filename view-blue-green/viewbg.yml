@@ -1,0 +1,69 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution with blue and green buckets, and a null bucket for
+  default. Include a view request lambda function that can route to either bucket based on
+  configuration.
+
+Parameters:
+  LambdaVersionArn:
+    Type: String
+  
+Resources:
+
+  CFOriginIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'CF Id for BlueGreen'
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: BucketOwnerFullControl
+
+
+  ContentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
+
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - ContentBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'ContentBucket', 's3.amazonaws.com']]
+          Id: distro
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Blue green bucket routing
+        DefaultCacheBehavior:
+          DefaultTTL: 300
+          MinTTL: 0
+          MaxTTL: 600
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: distro
+          ViewerProtocolPolicy: redirect-to-https
+          LambdaFunctionAssociations:
+            - EventType: 'viewer-request'
+              LambdaFunctionARN: !Ref 'LambdaVersionArn'
+        PriceClass: PriceClass_100
+
+Outputs:
+  ContentBucket: 
+    Value: !Ref ContentBucket
