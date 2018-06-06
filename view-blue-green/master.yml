@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  This template instantiates two routing functions (blue, green), and a cloud front
+  distro that bootstrapped with an initial routing function.
+
+  This allow blue/green staging of content into blue/green folders in
+  and s3 origin, with stack updates being the mechanism to switch 
+  the routing of origin requests to the desired folder.
+
+Parameters:
+  DeployBucketURL:
+    Type: String
+    Description: Bucket containing the cloudformation templates and the lambda zip file
+  CodeBucketName:
+    Type: String
+    Description: Bucket name containing lambda zip
+
+
+Resources:
+
+  BlueRouter:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['/', [!Ref DeployBucketURL, blue.yml]]
+      Parameters:
+        CodeBucketName: !Ref 'CodeBucketName'
+
+  GreenRouter:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['/', [!Ref DeployBucketURL, green.yml]]
+      Parameters:
+        CodeBucketName: !Ref 'CodeBucketName'
+
+  CloudFrontDistro:
+    DependsOn:
+      - BlueRouter
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Join ['/', [!Ref DeployBucketURL, viewbg.yml]]
+      Parameters:
+        LambdaVersionArn: !GetAtt BlueRouter.Outputs.LambdaVersion
+
+
+  
