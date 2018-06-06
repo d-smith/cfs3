@@ -55,5 +55,5 @@ Outputs:
     LambdaArn:
         Value: !GetAtt EdgeProto.Arn
 
-    LambdaVerversion:
+    LambdaVersion:
         Value: !Ref EdgeProtoVersion

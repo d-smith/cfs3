@@ -4,9 +4,10 @@ Deploy the lambdas:
 make
 
 aws cloudformation create-stack \
---stack-name blue \
---template-body file://blue.yml \
---parameters ParameterKey=CodeBucketName,ParameterValue=code97068 \
+--stack-name contentdistro \
+--template-body file://master.yml \
+--parameters ParameterKey=DeployBucketURL,ParameterValue=https://s3.amazonaws.com/code97068 \
+ParameterKey=CodeBucketName,ParameterValue=code97068 \
 --capabilities CAPABILITY_IAM
 
 aws cloudformation create-stack \
