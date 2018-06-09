@@ -1,0 +1,18 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a source code bucket.
+
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+  SourceCodeBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: BucketOwnerFullControl
+
+Outputs:
+  SourceCodeBucket: 
+    Value: !Ref SourceCodeBucket

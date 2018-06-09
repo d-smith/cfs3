@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution to distribute bucket contents, with no
+  direct access to the bucket allowed.
+
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+  CFOriginIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'CF Origin ID'
+
+  ContentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      AccessControl: BucketOwnerFullControl
+
+  ContentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ContentBucket
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action: s3:GetObject
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - ContentBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'BucketName', 's3.amazonaws.com']]
+          Id: contentBucketOrigin
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Distro from bucket
+        DefaultCacheBehavior:
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: contentBucketOrigin
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
