@@ -10,6 +10,8 @@ To create the source code stack:
 
 ```
 
+Use ../scripts/liststacks.sh to determine when the stack has successfully been created.
+
 Source code bucket is now ready for artifacts. This is used when creating the distro stack. It is also used to track the "active" folder in the active distro:
 
 ```console
@@ -33,6 +35,8 @@ To create the TEST distro stack:
 
 ```
 
+Use ../scripts/liststacks.sh to determine when the stack has successfully been created.
+
 Now the TEST distro is ready for test content. In this case, that is only one file - green.html.
 
 ```console
@@ -50,6 +54,8 @@ Deploy the active distro stack. The active distro defaults to blue when created:
 ./createstack-distro.sh contentdistro code97068
 
 ```
+
+Use ../scripts/liststacks.sh to determine when the stack has successfully been created.
 
 Now the active distro is ready for initial active content. In this case, that is only one file - blue.html. Get the bucket name from the contentdistro stack output.
 
@@ -99,6 +105,12 @@ Update the routing function at the edge, using the output from the appropriate r
 
 rm test.out stage.out
 ./updatestack.sh contentdistro-CloudFrontDistro-10EMHWDXQLQU5 arn:aws:lambda:us-east-1:<account-no>:function:contentdistro-GreenRouter-3QRHBV4OHAL8-EdgeProto-ERDAFC9P5S2L:1
+
+```
+
+Use ../scripts/liststacks.sh to determine when the stack has successfully been updated.
+
+```console
 
 ./copygreenactive.sh code97068
 ./listactive.sh code97068
