@@ -13,7 +13,7 @@ aws cloudformation create-stack \
 
 ```
 
-Source code bucket is now ready for artifacts. This is used when creating the distro stack. It is also used to track the active folder in the distro:
+Source code bucket is now ready for artifacts. This is used when creating the distro stack. It is also used to track the "active" folder in the active distro:
 
 ```console
 
@@ -39,9 +39,17 @@ aws cloudformation create-stack \
 
 ```
 
+Now the TEST distro is ready for test content. In this case, that is only one file - green.html.
+
+```console
+
+aws s3 cp green.html s3://test97068/foo.html
+
+```
+
 ## active distro
 
-Deploy the distro stack. The distro defaults to blue when created:
+Deploy the active distro stack. The active distro defaults to blue when created:
 
 ```console
 
@@ -53,6 +61,38 @@ ParameterKey=CodeBucketName,ParameterValue=code97068 \
 --capabilities CAPABILITY_IAM
 
 ```
+
+Now the active distro is ready for initial active content. In this case, that is only one file - blue.html. Get the bucket name from the contentdistro stack output.
+
+```console
+
+aws s3 cp blue.html s3://<contentdistro output bucket name>/blue/foo.html
+
+```
+
+## push TEST content
+
+After TEST content is validated in the TEST distro, push TEST content to the correct folder (blue or green) in the active distro. First, see which folder is currently "active" in the active distro:
+
+```console
+
+./listactive.sh code97068
+
+```
+
+Push TEST content to the "inactive" folder in the active distro. For example, if the "active" folder is blue, push TEST content to green.
+
+```console
+
+aws s3 cp s3://test97068/foo.html s3://<contentdistro output bucket name>/green/foo.html
+
+```
+
+## validate content copy
+
+There are a few ways to validate a copy, but the most straightforward is list both folders and compare file names and sizes.
+
+## switch TEST content to active content
 
 Update the routing function at the edge, using the output from the appropriate routing stack. This example switches to green:
 
