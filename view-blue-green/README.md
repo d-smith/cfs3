@@ -6,10 +6,7 @@ To create the source code stack:
 
 ```console
 
-aws cloudformation create-stack \
---stack-name contentsource \
---template-body file://source.yml \
---parameters ParameterKey=BucketName,ParameterValue=code97068
+./createstack-source.sh contentsource code97068
 
 ```
 
@@ -32,10 +29,7 @@ To create the TEST distro stack:
 
 ```console
 
-aws cloudformation create-stack \
---stack-name contenttest \
---template-body file://test.yml \
---parameters ParameterKey=BucketName,ParameterValue=test97068
+./createstack-test.sh contenttest test97068
 
 ```
 
@@ -53,12 +47,7 @@ Deploy the active distro stack. The active distro defaults to blue when created:
 
 ```console
 
-aws cloudformation create-stack \
---stack-name contentdistro \
---template-body file://master.yml \
---parameters ParameterKey=DeployBucketURL,ParameterValue=https://s3.amazonaws.com/code97068 \
-ParameterKey=CodeBucketName,ParameterValue=code97068 \
---capabilities CAPABILITY_IAM
+./createstack-distro.sh contentdistro code97068
 
 ```
 
@@ -92,15 +81,28 @@ aws s3 cp s3://test97068/foo.html s3://<contentdistro output bucket name>/green/
 
 There are a few ways to validate a copy, but the most straightforward is list both folders and compare file names and sizes.
 
+```console
+
+./listcontent.sh s3://test97068 > test.out
+./listcontent.sh s3://<contentdistro output bucket name>/green > stage.out
+diff test.out stage.out
+
+```
+
+There should be no differences between test.out and stage.out. If a more detailed validation is required related to object content, this should run within the region containing the buckets. AWS does not charge for incoming data and data transferred within a region.
+
 ## switch TEST content to active content
 
 Update the routing function at the edge, using the output from the appropriate routing stack. This example switches to green:
 
 ```console
 
-aws cloudformation update-stack \
---stack-name contentdistro-CloudFrontDistro-10EMHWDXQLQU5  \
---use-previous-template \
---parameters ParameterKey=LambdaVersionArn,ParameterValue=arn:aws:lambda:us-east-1:account-no:function:contentdistro-GreenRouter-3QRHBV4OHAL8-EdgeProto-ERDAFC9P5S2L:1
+rm test.out stage.out
+./updatestack.sh contentdistro-CloudFrontDistro-10EMHWDXQLQU5 arn:aws:lambda:us-east-1:<account-no>:function:contentdistro-GreenRouter-3QRHBV4OHAL8-EdgeProto-ERDAFC9P5S2L:1
+
+./copygreenactive.sh code97068
+./listactive.sh code97068
 
 ```
+
+Active content has been switched to green.
