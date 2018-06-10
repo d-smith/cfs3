@@ -41,9 +41,11 @@ Now the TEST distro is ready for test content. In this case, that is only one fi
 
 ```console
 
-aws s3 cp green.html s3://test97068/foo.html
+aws s3 cp green.html s3://test97068/green/foo.html
 
 ```
+
+Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /green/foo.html from the browser.
 
 ## active distro
 
@@ -65,6 +67,8 @@ aws s3 cp blue.html s3://<contentdistro output bucket name>/blue/foo.html
 
 ```
 
+Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, /blue.
+
 ## push TEST content
 
 After TEST content is validated in the TEST distro, push TEST content to the correct folder (blue or green) in the active distro. First, see which folder is currently "active" in the active distro:
@@ -79,7 +83,7 @@ Push TEST content to the "inactive" folder in the active distro. For example, if
 
 ```console
 
-aws s3 cp s3://test97068/foo.html s3://<contentdistro output bucket name>/green/foo.html
+aws s3 cp s3://test97068/green/foo.html s3://<contentdistro output bucket name>/green/foo.html
 
 ```
 
@@ -89,13 +93,15 @@ There are a few ways to validate a copy, but the most straightforward is list bo
 
 ```console
 
-./listcontent.sh s3://test97068 > test.out
-./listcontent.sh s3://<contentdistro output bucket name>/green > stage.out
+./listcontent.sh test97068/green > test.out
+./listcontent.sh <contentdistro output bucket name>/green > stage.out
 diff test.out stage.out
 
 ```
 
-There should be no differences between test.out and stage.out. If a more detailed validation is required related to object content, this should run within the region containing the buckets. AWS does not charge for incoming data and data transferred within a region.
+There should be no differences between test.out and stage.out. A common reason for differences is one or more remnants in the stage area from previous releases. That can be resolved with a controlled clean of the stage folder not included in this exercise.
+
+If a more detailed validation is required related to object content, this should run within the region containing the buckets. AWS does not charge for incoming data and data transferred within a region.
 
 ## switch TEST content to active content
 
@@ -117,4 +123,4 @@ Use ../scripts/liststacks.sh to determine when the stack has successfully been u
 
 ```
 
-Active content has been switched to green.
+The "active" folder in the active distro has been switched to green. Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, now it is /green.
