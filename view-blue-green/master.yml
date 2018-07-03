@@ -51,4 +51,7 @@ Outputs:
   ContentRouterArn:
     Value: !GetAtt CloudFrontDistro.Outputs.ContentRouterArn
 
+  DistroStackId:
+    Value: !Ref CloudFrontDistro
+
   

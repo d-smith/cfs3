@@ -14,14 +14,8 @@ provider:
     -  Effect: "Allow"
        Action:
          - "cloudformation:DescribeStacks"
-       Resource:
-          Fn::Join:
-            - ""
-            - - "arn:aws:cloudformation:"
-              - Ref: "AWS::Region"
-              - ":"
-              - Ref: "AWS::AccountId"
-              - ":stack/my-bg/*"
+         - "cloudformation:UpdateStack"
+       Resource: '*'
     -  Effect: "Allow"
        Action:
          - "s3:PutBucketNotification"
