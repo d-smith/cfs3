@@ -67,3 +67,6 @@ Resources:
 Outputs:
   ContentBucket: 
     Value: !Ref ContentBucket
+
+  ContentRouterArn:
+    Value: !Ref LambdaVersionArn
