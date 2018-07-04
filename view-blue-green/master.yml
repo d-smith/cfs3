@@ -41,5 +41,17 @@ Resources:
       Parameters:
         LambdaVersionArn: !GetAtt BlueRouter.Outputs.LambdaVersion
 
+Outputs:
+  BlueLambdaArn:
+    Value: !GetAtt BlueRouter.Outputs.LambdaVersion
+
+  GreenLambdaArn:
+    Value: !GetAtt GreenRouter.Outputs.LambdaVersion
+
+  ContentRouterArn:
+    Value: !GetAtt CloudFrontDistro.Outputs.ContentRouterArn
+
+  DistroStackId:
+    Value: !Ref CloudFrontDistro
 
   

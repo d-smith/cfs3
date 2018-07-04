@@ -1,0 +1,62 @@
+service: bucket-switch
+
+# You can pin your service to only deploy with a specific Serverless version
+# Check out our docs for more details
+# frameworkVersion: "=X.X.X"
+
+provider:
+  name: aws
+  stage: ${opt:stage, 'dev'}
+  runtime: nodejs8.10
+  environment:
+    BG_STACK: ${env:CF_STACK}
+  iamRoleStatements:
+    -  Effect: "Allow"
+       Action:
+         - "cloudformation:DescribeStacks"
+         - "cloudformation:UpdateStack"
+       Resource: '*'
+    -  Effect: "Allow"
+       Action:
+        - "cloudfront:GetDistribution"
+        - "cloudfront:UpdateDistribution"
+       Resource: '*'
+    -  Effect: "Allow"
+       Action:
+        - "lambda:GetFunction"
+        - "lambda:EnableReplication*"
+       Resource: '*'
+    -  Effect: "Allow"
+       Action:
+         - "s3:PutBucketNotification"
+       Resource:
+         Fn::Join:
+           - ""
+           - - "arn:aws:s3:::${env:SWITCH_BUCKET}"
+
+functions:
+  hello:
+    handler: handler.bucketHandler
+    events:
+      - existingS3:
+          bucket: ${env:SWITCH_BUCKET}
+          events: 
+            - s3:ObjectCreated:*
+
+#resources:
+#  Resources:
+#    BucketPermissions:
+#      Type: "AWS::Lambda::Permission"
+#      Properties:
+#        FunctionName:
+#          "Fn::GetAtt":
+#            - HelloLambdaFunction
+#            - Arn
+#        Principal: "s3.amazonaws.com"
+#        Action: "lambda:InvokeFunction"
+#        SourceAccount:
+#          Ref: AWS::AccountId
+#        SourceArn: "arn:aws:s3:::${env:SWITCH_BUCKET}"
+
+plugins:
+ - serverless-plugin-existing-s3
