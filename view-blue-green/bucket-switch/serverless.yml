@@ -18,6 +18,16 @@ provider:
        Resource: '*'
     -  Effect: "Allow"
        Action:
+        - "cloudfront:GetDistribution"
+        - "cloudfront:UpdateDistribution"
+       Resource: '*'
+    -  Effect: "Allow"
+       Action:
+        - "lambda:GetFunction"
+        - "lambda:EnableReplication*"
+       Resource: '*'
+    -  Effect: "Allow"
+       Action:
          - "s3:PutBucketNotification"
        Resource:
          Fn::Join:
