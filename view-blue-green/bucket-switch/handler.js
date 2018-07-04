@@ -14,31 +14,7 @@ const stackNameFromId = (stackId) => {
   return parts[1];
 }
 
-const getCloudFrontDistroStackName = async () => {
-  let prefix = process.env.BG_STACK + '-' + 'CloudFrontDistro';
-  console.log(`Looking for stacks starting with ${prefix}`)
-  let response = await cloudformation.describeStacks({}).promise();
-  while(true) {
-    let stacks = response['Stacks'];
-    for(var s of stacks) {
-      let stackName = s['StackName'];
-      console.log(`stack is... ${stackName}`);
-      if(stackName.startsWith(prefix)) {
-        console.log('found it');
-        return stackName;
-      }
-    }
 
-    let nextToken = response['NextToken'];
-    if(nextToken == null || nextToken == undefined) {
-      console.log('not found');
-      return undefined;
-    }
-
-    response = await cloudformation.describeStacks({NextToken: nextToken}).promise();
-  }
-
-}
 
 const getRoutingCommand = (records) => {
   let command = undefined;
@@ -70,15 +46,32 @@ const extractStackOutputs = (outputs) => {
 }
 
 const getCurrentRouter = (stackOutputs) => {
-  if(stackOutputs['BlueLambdaArn'] == stackOutputs['ContentRouterArn']) {
+  let distroStackName = stackNameFromId(stackOutputs['DistroStackId']); 
+  console.log(`distroStackname is ${distroStackName}`);
+
+  let distroStackOutputs = getStackOutputs(distroStackName);
+  console.log(`distro stack outputs: ${distroStackOutputs}`);
+
+  if(stackOutputs['BlueLambdaArn'] == distroStackOutputs['ContentRouterArn']) {
     return "blue";
   }
 
-  if(stackOutputs['GreenLambdaArn'] == stackOutputs['ContentRouterArn']) {
+  if(stackOutputs['GreenLambdaArn'] == distroStackOutputs['ContentRouterArn']) {
     return "green";
   }
 
   return undefined
+}
+
+const getStackOutputs = async (stackName) => {
+  let params = {
+    StackName: stackName
+  };
+
+  let response = await cloudformation.describeStacks(params).promise();
+  let stackOutputs = extractStackOutputs(response['Stacks'][0]['Outputs']);
+
+  return stackOutputs;
 }
 
 const switchRouter = async (router, stackOutputs) => {
@@ -89,11 +82,11 @@ const switchRouter = async (router, stackOutputs) => {
     newRouterArn = stackOutputs['BlueLambdaArn'];
   }
 
-  let stackName = await getCloudFrontDistroStackName();
-  console.log(`updating stack name ${stackName} with lambda arn ${newRouterArn}`);
+  let distroStackName = stackNameFromId(stackOutputs['DistroStackId']); 
+  console.log(`updating stack name ${distroStackName} with lambda arn ${newRouterArn}`);
 
   let params = {
-    StackName: stackName,
+    StackName: distroStackName,
     UsePreviousTemplate: true,
     Parameters: [{
       ParameterKey: 'LambdaVersionArn',
@@ -109,13 +102,7 @@ const setRouter = async (router) => {
   console.log(`set router: ${router}`);
   console.log(`stack name: ${JSON.stringify(process.env.BG_STACK)}`);
   
-  let params = {
-    StackName: process.env.BG_STACK
-  };
-
-  let response = await cloudformation.describeStacks(params).promise();
-  let stackOutputs = extractStackOutputs(response['Stacks'][0]['Outputs']);
-
+  let stackOutputs = await getStackOutputs(process.env.BG_STACK);
   let currentRouter = getCurrentRouter(stackOutputs);
 
   console.log(`current router: ${currentRouter}`);
