@@ -1,8 +1,8 @@
 # bucket-switch
 
-Set the current routing function via dropping a directive in a bucket. This could be useful if you want to grant the ability to change routing from blue to green (and vice versa) based on bucket access without granting cloud formation or console access.
+This is a [serverless application](https://serverless.com/) to switch the current routing function via dropping a directive in a bucket. This could be useful if you want to grant the ability to change routing from blue to green (and vice versa) based on bucket access without granting cloud formation or console access.
 
-This uses the [serverless-external-s3-event](https://github.com/matt-filion/serverless-external-s3-event) plugin.
+This uses the [serverless-external-s3-event](https://github.com/matt-filion/serverless-external-s3-event) plugin, and assumes the serverless framework and tooling have been installed (see [here](https://serverless.com/framework/docs/providers/aws/guide/installation/) for details on installing serverless)
 
 To deploy:
 

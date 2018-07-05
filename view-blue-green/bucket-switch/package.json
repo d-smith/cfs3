@@ -1,0 +1,14 @@
+{
+  "name": "bucket-switch",
+  "version": "1.0.0",
+  "description": "Set the current routing function via dropping a directive in a bucket. This could be useful if you want to grant the ability to change routing from blue to green (and vice versa) based on bucket access without granting cloud formation or console access.",
+  "main": "handler.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "serverless-plugin-existing-s3": "^2.2.2"
+  }
+}
