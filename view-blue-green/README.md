@@ -12,14 +12,12 @@ To create the source code stack:
 
 Use ../scripts/liststacks.sh to determine when the stack has successfully been created.
 
-Source code bucket is now ready for artifacts. This is used when creating the distro stack. It is also used to track the "active" folder in the active distro:
+Source code bucket is now ready for artifacts. This is used when creating the distro stack:
 
 ```console
 
 make
 ./copysource.sh code97068
-./copyblueactive.sh code97068
-./listactive.sh code97068
 
 ```
 
@@ -67,15 +65,16 @@ aws s3 cp blue.html s3://<contentdistro output bucket name>/blue/foo.html
 
 ```
 
-Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, /blue.
+Use ../scripts/listdistributions.sh to get the distro URL or grab it from the stack output. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, /blue.
 
 ## push TEST content
 
-After TEST content is validated in the TEST distro, push TEST content to the correct folder (blue or green) in the active distro. First, see which folder is currently "active" in the active distro:
+After TEST content is validated in the TEST distro, push TEST content to the correct folder (blue or green) in the active distro. First, see which folder is currently "active" in the active distro using the active query on the content distribution domain name, for example:
 
 ```console
 
-./listactive.sh code97068
+$ curl https://d2w9s8k7qdityr.cloudfront.net?active
+green
 
 ```
 
@@ -115,12 +114,5 @@ rm test.out stage.out
 ```
 
 Use ../scripts/liststacks.sh to determine when the stack has successfully been updated.
-
-```console
-
-./copygreenactive.sh code97068
-./listactive.sh code97068
-
-```
 
 The "active" folder in the active distro has been switched to green. Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, now it is /green.

@@ -70,3 +70,6 @@ Outputs:
 
   ContentRouterArn:
     Value: !Ref LambdaVersionArn
+
+  DomainName:
+    Value: !GetAtt MyDistro.DomainName
