@@ -150,3 +150,100 @@ curl https://d2iujgwsf3tt4j.cloudfront.net/green/foo.html -H 'content-preview:su
 </html>
 
 ````
+
+## Retrieving Specific File Versions
+
+When storing content in a versioned bucket, specific versions of a file may be retrieved using the s3 version id.
+
+Example:
+
+````console
+
+$ curl https://d21k5bj70t6gzi.cloudfront.net/foo.html
+<html>
+<body>
+<h3>blue</h3>
+</body>
+</html>
+$ aws s3 cp bluenew.html s3://contentdistro6-cloudfrontdistro-1hj-contentbucket-yqrqi5zi5o51/blue/foo.html
+$ ../scripts/invalidatedistributioncache.sh E2A0DA2OOSVHNP
+{
+    "Location": "https://cloudfront.amazonaws.com/2017-10-30/distribution/E2A0DA2OOSVHNP/invalidation/I1Z0NXPZWPXUY7",
+    "Invalidation": {
+        "Id": "I1Z0NXPZWPXUY7",
+        "Status": "InProgress",
+        "CreateTime": "2018-07-12T21:58:00.179Z",
+        "InvalidationBatch": {
+            "Paths": {
+                "Quantity": 1,
+                "Items": [
+                    "/*"
+                ]
+            },
+            "CallerReference": "cli-1531432679-248582"
+        }
+    }
+}
+
+$ curl https://d21k5bj70t6gzi.cloudfront.net/foo.html
+<html>
+<body>
+<h3>newer and blue-er</h3>
+</body>
+</html>
+$ aws s3api list-object-versions --bucket contentdistro6-cloudfrontdistro-1hj-contentbucket-yqrqi5zi5o51
+{
+    "Versions": [
+        {
+            "ETag": "\"99b5fcd68c59f6ec1d95d926bdf691dc\"",
+            "Size": 57,
+            "StorageClass": "STANDARD",
+            "Key": "blue/foo.html",
+            "VersionId": "4u0t4OpxKUXwQHaYLAarKeWIabA8ZgKh",
+            "IsLatest": true,
+            "LastModified": "2018-07-12T21:57:37.000Z",
+            "Owner": {
+                "DisplayName": "dougasmith",
+                "ID": "99e53847ad47ffa0708aec43f34d7dbd9d0433f16cc4997e21e625badbc08b0d"
+            }
+        },
+        {
+            "ETag": "\"6ef58be03c35d02d5d2b25a09c7a2add\"",
+            "Size": 44,
+            "StorageClass": "STANDARD",
+            "Key": "blue/foo.html",
+            "VersionId": "e1RIQLY3U2rAa_ch5hAbAuSctWZCKave",
+            "IsLatest": false,
+            "LastModified": "2018-07-12T21:42:19.000Z",
+            "Owner": {
+                "DisplayName": "dougasmith",
+                "ID": "99e53847ad47ffa0708aec43f34d7dbd9d0433f16cc4997e21e625badbc08b0d"
+            }
+        },
+        {
+            "ETag": "\"a6ff3aee589e18c57bdb5885889740da\"",
+            "Size": 45,
+            "StorageClass": "STANDARD",
+            "Key": "green/foo.html",
+            "VersionId": "MRRdCSWTaQTisaDNNobSqaswjr_eMXWG",
+            "IsLatest": true,
+            "LastModified": "2018-07-12T21:42:19.000Z",
+            "Owner": {
+                "DisplayName": "dougasmith",
+                "ID": "99e53847ad47ffa0708aec43f34d7dbd9d0433f16cc4997e21e625badbc08b0d"
+            }
+        }
+    ]
+}
+$ curl https://d21k5bj70t6gzi.cloudfront.net/foo.html?versionId=e1RIQLY3U2rAa_ch5hAbAuSctWZCKave
+<html>
+<body>
+<h3>blue</h3>
+</body>
+</html>
+$ curl https://d21k5bj70t6gzi.cloudfront.net/foo.html?versionId=4u0t4OpxKUXwQHaYLAarKeWIabA8ZgKh
+<html>
+<body>
+<h3>newer and blue-er</h3>
+</body>
+</html>
