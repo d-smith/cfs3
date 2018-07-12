@@ -7,7 +7,7 @@ const isActiveQuery = (request) => {
     return false;
 }
 
-const respondActive= (active, callback) => {
+const respondActive = (active, callback) => {
     let response = {
         body: active,
         bodyEncoding: 'text',
@@ -16,6 +16,10 @@ const respondActive= (active, callback) => {
     };
 
     callback(null, response);
+}
+
+const isContentPreview = (request) => {
+    return request.headers['content-preview'] != undefined;
 }
 
 exports.blue = (event, context, callback) => {
@@ -29,8 +33,10 @@ exports.blue = (event, context, callback) => {
         return;
     }
 
-    //Always blue
-    request.uri = '/blue' + request.uri;
+    //Always blue unless preview
+    if(!isContentPreview(request)) {
+        request.uri = '/blue' + request.uri;
+    }
     
     callback(null, request);
 }
@@ -46,8 +52,10 @@ exports.green = (event, context, callback) => {
         return;
     }
 
-    //Always green
-    request.uri = '/green' + request.uri;
+    //Always green unless preview
+    if(!isContentPreview(request)) {
+        request.uri = '/green' + request.uri;
+    }
     
     callback(null, request);
 }
