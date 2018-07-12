@@ -116,3 +116,37 @@ rm test.out stage.out
 Use ../scripts/liststacks.sh to determine when the stack has successfully been updated.
 
 The "active" folder in the active distro has been switched to green. Use ../scripts/listdistributions.sh to get the distro URL. Make sure you can see /foo.html from the browser. The Lambda edge function prepends the "active" folder to the URI. In this case, now it is /green.
+
+## Previewing Content, Viewing Inactive Content
+
+Using HTTP headers, inactive content can be viewed as well.
+
+* To view content using the full bucket path without the lambda function amending the uri, use `content-preview` set to anything.
+* To instruct the lambda function to route the request to the inactive content, use `content-inactive` set to anything.
+
+Example:
+
+````console
+
+$ curl https://d2iujgwsf3tt4j.cloudfront.net?active
+blue
+$ curl https://d2iujgwsf3tt4j.cloudfront.net/foo.html
+<html>
+<body>
+<h3>blue</h3>
+</body>
+</html>
+$ curl https://d2iujgwsf3tt4j.cloudfront.net/foo.html -H 'content-inactive:sure'
+<html>
+<body>
+<h3>green</h3>
+</body>
+</html>
+curl https://d2iujgwsf3tt4j.cloudfront.net/green/foo.html -H 'content-preview:sure'
+<html>
+<body>
+<h3>green</h3>
+</body>
+</html>
+
+````
