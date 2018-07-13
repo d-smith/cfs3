@@ -54,4 +54,10 @@ Outputs:
   DistroStackId:
     Value: !Ref CloudFrontDistro
 
+  DomainName:
+    Value: !GetAtt CloudFrontDistro.Outputs.DomainName
+
+  ContentBucket:
+    Value: !GetAtt CloudFrontDistro.Outputs.ContentBucket
+
   

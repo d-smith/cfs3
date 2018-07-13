@@ -20,6 +20,8 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: BucketOwnerFullControl
+      VersioningConfiguration:
+        Status: Enabled
 
 
   ContentBucketPolicy:
@@ -32,7 +34,9 @@ Resources:
           Effect: Allow
           Principal:
             'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
-          Action: s3:GetObject
+          Action: 
+          - s3:GetObject
+          - s3:GetObjectVersion
           Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
 
 
@@ -54,7 +58,9 @@ Resources:
           MinTTL: 0
           MaxTTL: 600
           ForwardedValues:
-            QueryString: 'false'
+            QueryString: 'true'
+            QueryStringCacheKeys:
+            - versionId
             Cookies:
               Forward: none
           TargetOriginId: distro
@@ -70,3 +76,6 @@ Outputs:
 
   ContentRouterArn:
     Value: !Ref LambdaVersionArn
+
+  DomainName:
+    Value: !GetAtt MyDistro.DomainName
