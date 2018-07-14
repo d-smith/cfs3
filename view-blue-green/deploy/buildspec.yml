@@ -1,0 +1,8 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - ls
+      - for dir in `ls -d */`; do echo $dir; done
+      - echo $partition
