@@ -8,6 +8,9 @@ Parameters:
     Type: String
     Description: Bucket partition to copy files to
     Default: blue
+  TargetBucket:
+    Type: String
+    Description: Target bucket to deploy code to
 
 Resources:
   MyArtifactBucket:
@@ -136,6 +139,8 @@ Resources:
         EnvironmentVariables:
           - Name: partition
             Value: !Ref Partition
+          - Name: target
+            Value: !Ref TargetBucket
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
