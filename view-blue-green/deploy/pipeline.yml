@@ -1,0 +1,204 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Create a full code build pipeline and code build stages for
+  a static hosted app.
+
+Parameters:
+  Partition:
+    Type: String
+    Description: Bucket partition to copy files to
+    Default: blue
+  TargetBucket:
+    Type: String
+    Description: Deploy code to this bucket
+  CloudFrontDistriutionId:
+    Type: String
+    Description: CloudFront ID serving content from the bucket
+  BucketRouterLambda:
+    Type: String
+    Description: >
+      ARN of the lambda function that routes requests to the bucket
+      and folder/partition associated with this stack. Content will not
+      bt deployed to an active partition
+
+Resources:
+  MyArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      VersioningConfiguration:
+        Status: Enabled
+
+  CodePipelineStaticHostingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [codepipeline.amazonaws.com ]
+          Action: ['sts:AssumeRole']
+      Path: /
+
+  CodePipelinePolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    DependsOn: 
+      - CodePipelineStaticHostingRole
+      - MyArtifactBucket
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Sid: bucketvers
+            Effect: "Allow"
+            Action: 
+              - "s3:GetBucketVersioning"
+            Resource: !GetAtt "MyArtifactBucket.Arn"
+          - 
+            Sid: s3
+            Effect: "Allow"
+            Action: 
+              - "s3:GetObject"
+              - "s3:GetObjectVersion"
+              - "s3:PutObject"
+            Resource: !Join [ '', [ !GetAtt "MyArtifactBucket.Arn", "/*" ]]
+          -
+            Sid: codebuild
+            Effect: "Allow"
+            Action:
+              - "codebuild:BatchGetBuilds"
+              - "codebuild:StartBuild"
+            Resource: '*'
+          -
+            Sid: cloudformation
+            Effect: "Allow"
+            Action:
+              - "cloudformation:CreateStack"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "CodePipelineStaticHostingRole"
+
+  CodeBuildStaticHostingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [codebuild.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonS3FullAccess 
+      - arn:aws:iam::aws:policy/AWSLambdaFullAccess
+      - arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess
+
+  CFPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    DependsOn: CodeBuildStaticHostingRole
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "cloudformation:*"
+            Resource: "*"
+      Roles:
+        - !Ref CodeBuildStaticHostingRole
+
+  #
+  # This build policy was needed to deploy the sample app in this
+  # repo. You may need to tailor this to your situation.
+  #
+  SLSDeployPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    DependsOn: CodeBuildStaticHostingRole
+    Properties: 
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Action: 
+              - "iam:GetRole"
+              - "iam:CreateRole"
+              - "iam:PutRolePolicy"
+              - "iam:DeleteRolePolicy"
+              - "iam:DeleteRole"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "CodeBuildStaticHostingRole"
+
+  CodeDeployProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Join [ "-", [!Ref "AWS::StackName", "SLSDeploy"]]
+      Description: build project (and ci skeleton) for sls applications
+      ServiceRole: !GetAtt CodeBuildStaticHostingRole.Arn
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/nodejs:6.3.1
+        EnvironmentVariables:
+          - Name: partition
+            Value: !Ref Partition
+          - Name: target
+            Value: !Ref TargetBucket
+          - Name: cloudFrontID
+            Value: !Ref CloudFrontDistriutionId
+          - Name: activeRouterLambdaArn
+            Value: !Ref BucketRouterLambda
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      Artifacts:
+        Type: CODEPIPELINE
+      TimeoutInMinutes: 10
+
+  StaticHostingPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    DependsOn: CodeDeployProject
+    Properties:
+      RoleArn: !GetAtt CodePipelineStaticHostingRole.Arn
+      Stages:
+        -
+          Name: Source
+          Actions:
+            -
+              Name: SourceAction
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: 1
+                Provider: S3
+              OutputArtifacts:
+                -
+                  Name: MyApp
+              Configuration:
+                S3Bucket: !Ref MyArtifactBucket
+                S3ObjectKey: 'deploy.zip'
+                PollForSourceChanges: 'true'
+              RunOrder: 1
+        -
+          Name: Deploy
+          Actions:
+            -
+              Name: DeployAction
+              InputArtifacts:
+                -
+                  Name: MyApp
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: 1
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: !Ref CodeDeployProject
+      ArtifactStore:
+        Type: S3
+        Location: !Ref MyArtifactBucket       
+      Name: !Join ["-", [!Ref "AWS::StackName", "SLSPipeline"]]

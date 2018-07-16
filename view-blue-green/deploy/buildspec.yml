@@ -1,0 +1,14 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Current router"
+      - export activeRouter=$(aws cloudfront get-distribution --id E2IAZAUG9L61I7 --query 'Distribution.DistributionConfig.DefaultCacheBehavior.LambdaFunctionAssociations.Items[?EventType==`viewer-request`].LambdaFunctionARN' --output text)
+      - echo $activeRouter
+      - echo "Partition router"
+      - echo $activeRouterLambdaArn
+      - ls -d */
+      - echo $partition
+      - echo $target
+      - if [ $activeRouter != $activeRouterLambdaArn ]; then for dir in `ls -d */`; do aws s3 cp $dir s3://$target/$partition/$dir --recursive; done; fi
