@@ -10,7 +10,16 @@ Parameters:
     Default: blue
   TargetBucket:
     Type: String
-    Description: Target bucket to deploy code to
+    Description: Deploy code to this bucket
+  CloudFrontDistriutionId:
+    Type: String
+    Description: CloudFront ID serving content from the bucket
+  BucketRouterLambda:
+    Type: String
+    Description: >
+      ARN of the lambda function that routes requests to the bucket
+      and folder/partition associated with this stack. Content will not
+      bt deployed to an active partition
 
 Resources:
   MyArtifactBucket:
@@ -83,9 +92,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonS3FullAccess 
       - arn:aws:iam::aws:policy/AWSLambdaFullAccess
-      - arn:aws:iam::aws:policy/AmazonAPIGatewayAdministrator 
-      - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
-      - arn:aws:iam::aws:policy/AWSStepFunctionsFullAccess
+      - arn:aws:iam::aws:policy/CloudFrontReadOnlyAccess
 
   CFPolicy:
     Type: "AWS::IAM::ManagedPolicy"
@@ -141,6 +148,10 @@ Resources:
             Value: !Ref Partition
           - Name: target
             Value: !Ref TargetBucket
+          - Name: cloudFrontID
+            Value: !Ref CloudFrontDistriutionId
+          - Name: activeRouterLambdaArn
+            Value: !Ref BucketRouterLambda
       Source:
         Type: CODEPIPELINE
         BuildSpec: buildspec.yml
