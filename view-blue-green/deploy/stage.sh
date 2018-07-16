@@ -2,7 +2,7 @@
 rm -f deploy.zip
 cd sample-app
 npm install
-ng build
+ng build --base-href /sample-app/
 cd dist
 cp ../../buildspec.yml .
 zip deploy.zip -r *
