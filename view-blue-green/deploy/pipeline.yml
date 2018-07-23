@@ -11,7 +11,7 @@ Parameters:
   TargetBucket:
     Type: String
     Description: Deploy code to this bucket
-  CloudFrontDistriutionId:
+  CloudFrontDistributionId:
     Type: String
     Description: CloudFront ID serving content from the bucket
   BucketRouterLambda:
@@ -149,7 +149,7 @@ Resources:
           - Name: target
             Value: !Ref TargetBucket
           - Name: cloudFrontID
-            Value: !Ref CloudFrontDistriutionId
+            Value: !Ref CloudFrontDistributionId
           - Name: activeRouterLambdaArn
             Value: !Ref BucketRouterLambda
       Source:
