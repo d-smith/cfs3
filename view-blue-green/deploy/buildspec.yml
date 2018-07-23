@@ -4,7 +4,7 @@ phases:
   build:
     commands:
       - echo "Current router"
-      - export activeRouter=$(aws cloudfront get-distribution --id E2IAZAUG9L61I7 --query 'Distribution.DistributionConfig.DefaultCacheBehavior.LambdaFunctionAssociations.Items[?EventType==`viewer-request`].LambdaFunctionARN' --output text)
+      - export activeRouter=$(aws cloudfront get-distribution --id $cloudFrontID --query 'Distribution.DistributionConfig.DefaultCacheBehavior.LambdaFunctionAssociations.Items[?EventType==`viewer-request`].LambdaFunctionARN' --output text)
       - echo $activeRouter
       - echo "Partition router"
       - echo $activeRouterLambdaArn
