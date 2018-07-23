@@ -4,6 +4,13 @@ This is a [serverless application](https://serverless.com/) to switch the curren
 
 This uses the [serverless-external-s3-event](https://github.com/matt-filion/serverless-external-s3-event) plugin, and assumes the serverless framework and tooling have been installed (see [here](https://serverless.com/framework/docs/providers/aws/guide/installation/) for details on installing serverless)
 
+Prior to deployment, install the view-blue-green stack, and create a bucket to trigger the blue/green routing switch. Export the view-blue-green stack name as CF_STACK, and the trigger bucket name as SWITCH_BUCKET, e.g.
+
+```console
+export CF_STACK=contentdistro
+export SWITCH_BUCKET=switch97068
+```
+
 To deploy:
 
 ````console
