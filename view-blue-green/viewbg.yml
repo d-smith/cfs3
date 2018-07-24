@@ -7,7 +7,7 @@ Description: >
 Parameters:
   LambdaVersionArn:
     Type: String
-  
+
 Resources:
 
   CFOriginIdentity:
@@ -20,6 +20,10 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: BucketOwnerFullControl
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
 
@@ -34,7 +38,7 @@ Resources:
           Effect: Allow
           Principal:
             'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
-          Action: 
+          Action:
           - s3:GetObject
           - s3:GetObjectVersion
           Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'ContentBucket', /*]]
@@ -71,7 +75,7 @@ Resources:
         PriceClass: PriceClass_100
 
 Outputs:
-  ContentBucket: 
+  ContentBucket:
     Value: !Ref ContentBucket
 
   ContentRouterArn:
