@@ -1,6 +1,8 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
-  S3Bucket:
+
+
+  ActiveBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: PublicRead
@@ -8,11 +10,23 @@ Resources:
         IndexDocument: index.html
         ErrorDocument: error.html
 
-  BucketPolicy:
+  PassiveBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+
+## TODO - can we use a mapping to reference a single defintion
+## of the policy document?
+
+  ActiveBucketPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
+      Bucket: !Ref ActiveBucket
       PolicyDocument:
-        Id: MyPolicy
         Version: 2012-10-17
         Statement:
           - Sid: PublicReadForGetBucketObjects
@@ -22,7 +36,7 @@ Resources:
             Resource: !Join 
               - ''
               - - 'arn:aws:s3:::'
-                - !Ref S3Bucket
+                - !Ref ActiveBucket
                 - /*
             Condition:
               Bool: 
@@ -32,18 +46,44 @@ Resources:
 #              IpAddress:
 #                "aws:SourceIp": "73.180.44.191/32"
 
-      Bucket: !Ref S3Bucket
+  PassiveBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PassiveBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref PassiveBucket
+                - /*
+            Condition:
+              Bool: 
+                "aws:SecureTransport": "true"
+# Add in source ip restrictions if desired - can be a single 
+# value or an array of values
+#              IpAddress:
+#                "aws:SourceIp": "73.180.44.191/32"
+
+      
 Outputs:
-  WebsiteURL:
-    Value: !GetAtt 
-      - S3Bucket
-      - WebsiteURL
-    Description: URL for website hosted on S3
-  S3BucketSecureURL:
+  ActiveBucketSecureURL:
     Value: !Join 
       - ''
       - - 'https://'
         - !GetAtt 
-          - S3Bucket
+          - ActiveBucket
           - DomainName
-    Description: Name of S3 bucket to hold website content  
+
+  PassiveBucketSecureURL:
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - PassiveBucket
+          - DomainName
