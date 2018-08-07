@@ -1,0 +1,167 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  ActiveBucket:
+    Type: String
+    Default: blue
+    AllowedValues:
+      - blue
+      - green
+    
+Mappings: 
+  BlueMap: 
+    blue: 
+      PathPattern: '/*'
+    green:  
+      PathPattern: 'x'
+
+  GreenMap:
+    blue:
+      PathPattern: 'x'
+    green:
+      PathPattern: '/*'
+
+Conditions:
+# Make this evaluate false if you just want to try the two buckets
+# serving files via https
+  CreateDistro: !Equals [ 'x', 'x' ]
+
+Resources:
+
+  BlueBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+  GreenBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+
+
+## TODO - can we use a mapping to reference a single defintion
+## of the policy document?
+
+  BlueBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BlueBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref BlueBucket
+                - /*
+            Condition:
+              Bool: 
+                "aws:SecureTransport": "true"
+# Add in source ip restrictions if desired - can be a single 
+# value or an array of values
+#              IpAddress:
+#                "aws:SourceIp": "73.180.44.191/32"
+
+  GreenBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref GreenBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref GreenBucket
+                - /*
+            Condition:
+              Bool: 
+                "aws:SecureTransport": "true"
+# Add in source ip restrictions if desired - can be a single 
+# value or an array of values
+#              IpAddress:
+#                "aws:SourceIp": "73.180.44.191/32"
+
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    Condition: CreateDistro
+    DependsOn:
+    - BlueBucket
+    - GreenBucket
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !GetAtt "BlueBucket.DomainName"
+          Id: blue
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+        - DomainName: !GetAtt "GreenBucket.DomainName"
+          Id: green
+          CustomOriginConfig:
+            OriginProtocolPolicy: https-only
+        Enabled: 'true'
+        Comment: Blue green bucket web site origins
+        CacheBehaviors:
+          - ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            DefaultTTL: 300
+            MinTTL: 0
+            MaxTTL: 600
+            TargetOriginId: blue
+            PathPattern: !FindInMap [ BlueMap, !Ref ActiveBucket, PathPattern]
+            ViewerProtocolPolicy: redirect-to-https
+          - ForwardedValues:
+              QueryString: 'false'
+              Cookies:
+                Forward: none
+            DefaultTTL: 300
+            MinTTL: 0
+            MaxTTL: 600
+            TargetOriginId: green
+            PathPattern: !FindInMap [ GreenMap, !Ref ActiveBucket, PathPattern]
+            ViewerProtocolPolicy: redirect-to-https
+        DefaultCacheBehavior:
+          DefaultTTL: 300
+          MinTTL: 0
+          MaxTTL: 600
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          TargetOriginId: !Ref ActiveBucket
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+      
+Outputs:
+  BlueBucketSecureURL:
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - BlueBucket
+          - DomainName
+
+  GreenBucketSecureURL:
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - GreenBucket
+          - DomainName
