@@ -22,6 +22,8 @@ Mappings:
       PathPattern: '/*'
 
 Conditions:
+# Make this evaluate false if you just want to try the two buckets
+# serving files via https
   CreateDistro: !Equals [ 'x', 'x' ]
 
 Resources:
