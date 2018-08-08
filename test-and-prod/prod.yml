@@ -1,0 +1,73 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  Create a cloudfront distribution using an existing
+  bucket as the origin, hijacking the bucket by associating
+  a new bucket policy with the bucket such that only 
+  the distribution created by this stack can access the
+  bucket via http. 
+
+  This stack can be updated with new bucket names, enabling
+  blue/green deployments. 
+
+Parameters:
+  BucketName:
+    Type: String
+
+Resources:
+
+  CFOriginIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: 'CF Id for BlueGreen'
+
+  ContentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Statement:
+        - Sid: CFreader
+          Effect: Allow
+          Principal:
+            'CanonicalUser': !GetAtt [CFOriginIdentity, S3CanonicalUserId]
+          Action:
+          - s3:GetObject
+          - s3:GetObjectVersion
+          Resource: !Join [ '', ['arn:aws:s3:::', !Ref 'BucketName', /*]]
+
+
+  MyDistro:
+    Type: AWS::CloudFront::Distribution
+    DependsOn:
+    - ContentBucketPolicy
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: !Join [., [!Ref 'BucketName', 's3.amazonaws.com']]
+          Id: distro
+          S3OriginConfig:
+            OriginAccessIdentity: !Join [/, ['origin-access-identity/cloudfront', !Ref 'CFOriginIdentity']]
+        Enabled: 'true'
+        Comment: Blue green bucket routing
+        DefaultCacheBehavior:
+          DefaultTTL: 300
+          MinTTL: 0
+          MaxTTL: 600
+          ForwardedValues:
+            QueryString: 'true'
+            QueryStringCacheKeys:
+            - versionId
+            Cookies:
+              Forward: none
+          TargetOriginId: distro
+          ViewerProtocolPolicy: redirect-to-https
+        PriceClass: PriceClass_100
+
+Outputs:
+
+  DomainName:
+    Value: !GetAtt MyDistro.DomainName
+
+  CFDistribution:
+    Value: !Ref MyDistro
